@@ -23,9 +23,11 @@ class LossyNetwork:
         num_packets = len(packets_mask)
         num_bytes = data.numel()
         received_data = data.clone()
+        received_data = received_data.view(-1)
         for i in range(num_packets):
             if not packets_mask[i]:
                 start = i * MAX_PAYLOAD_BYTES
                 end = min(start + MAX_PAYLOAD_BYTES, num_bytes)
                 received_data[start:end] = 0
+        received_data = received_data.view(data.shape)
         return received_data
