@@ -11,14 +11,14 @@ def main(args):
     train_dataset = dataset["train"]
     eval_dataset = dataset["validation"]
     model = AutoModelForSequenceClassification.from_pretrained("google-bert/bert-large-uncased", num_labels=2)
-    tokenizer = AutoTokenizer.from_pretrained("google-bert/bert-large-uncased")
+    text_tokenizer = AutoTokenizer.from_pretrained("google-bert/bert-large-uncased")
 
     def preprocess(data):
         question = data["sentence"] + "\n" + data["option1"] + "\n" + data["option2"]
         label = 0 if data["answer"] == '1' else 1
         return {
-            'input_ids': tokenizer(question, truncation=True, padding="max_length", max_length=512)["input_ids"],
-            'attention_mask': tokenizer(question, truncation=True, padding="max_length", max_length=512)["attention_mask"],
+            'input_ids': text_tokenizer(question, truncation=True, padding="max_length", max_length=512)["input_ids"],
+            'attention_mask': text_tokenizer(question, truncation=True, padding="max_length", max_length=512)["attention_mask"],
             'labels': label
         }
     
@@ -40,7 +40,7 @@ def main(args):
         num_nodes=args.num_nodes,
         network=network,
         model=model,
-        tokenizer="google-bert/bert-large-uncased",
+        tokenizer=text_tokenizer,
         args = training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,

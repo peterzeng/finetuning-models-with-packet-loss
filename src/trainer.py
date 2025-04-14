@@ -10,14 +10,32 @@ class DistributedTrainer(Trainer):
         self.network.set_seed(1234)
 
 
-    def training_step(self, model, inputs):
+    def training_step(self, model, inputs, num_items_in_batch=0):
         num_items_in_batch = len(inputs[list(inputs.keys())[0]])
         minibatch_size = num_items_in_batch // self.num_nodes
         averaged_gradients = {k:torch.zeros_like(v) for k, v in model.named_parameters()}
+        
+        # Initialize total loss
+        total_loss = torch.tensor(0.0, device=next(model.parameters()).device, requires_grad=True)
+        
         for i in range(self.num_nodes):
             inputs_split = {k: v[i * minibatch_size:(i + 1) * minibatch_size] for k, v in inputs.items()}
+            
+            # Get loss from parent class
             loss = super().training_step(model, inputs_split)
+            
+            # If loss is not a tensor or doesn't require grad, convert it
+            if not isinstance(loss, torch.Tensor):
+                loss = torch.tensor(loss, device=next(model.parameters()).device, requires_grad=True)
+            elif not loss.requires_grad:
+                loss = loss.detach().clone().requires_grad_(True)
+                
+            # Add to total loss
+            total_loss = total_loss + loss
+            
+            # Compute gradients
             loss.backward(retain_graph=True)
+            
             node_gradients = {
                 name: param.grad.clone() for name, param in model.named_parameters()
             }
@@ -32,5 +50,5 @@ class DistributedTrainer(Trainer):
         for name, param in model.named_parameters():
             param.grad = averaged_gradients[name]
         
-        return loss
+        return total_loss / self.num_nodes
     
