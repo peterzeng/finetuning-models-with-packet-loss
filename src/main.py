@@ -1,6 +1,7 @@
 from comms import LossyNetwork
 from trainer import DistributedTrainer
 from datasets import load_dataset
+import torch
 from transformers import TrainingArguments, AutoModelForSequenceClassification, AutoTokenizer
 
 def main(args):
@@ -11,6 +12,7 @@ def main(args):
     train_dataset = dataset["train"]
     eval_dataset = dataset["validation"]
     model = AutoModelForSequenceClassification.from_pretrained("google-bert/bert-large-uncased", num_labels=2)
+    model = model.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     text_tokenizer = AutoTokenizer.from_pretrained("google-bert/bert-large-uncased")
 
     def preprocess(data):
@@ -29,11 +31,11 @@ def main(args):
         output_dir=args.output_dir,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
-        num_train_epochs=3,
+        num_train_epochs=10,
         evaluation_strategy="epoch",
         save_strategy="epoch",
         logging_dir=f"{args.output_dir}/logs",
-        logging_steps=10,
+        logging_steps=50,
         fp16=args.fp16,
     )
     trainer = DistributedTrainer(
