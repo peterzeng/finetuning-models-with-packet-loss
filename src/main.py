@@ -63,7 +63,7 @@ def main(args):
 
     # Adjust training epochs based on dataset size
     epochs = args.epochs
-    if args.max_samples > 0 and args.epochs == 0:
+    if args.max_samples > 0 and args.epochs == 3:
         # If using a small subset and epochs not specified, use more epochs
         epochs = 5
         
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Distributed Training with Packet Loss")
     parser.add_argument('--num_nodes', type=int, default=2, help='Number of nodes')
-    parser.add_argument('--loss_rate', type=float, default=0.01, help='Packet loss rate')
+    parser.add_argument('--loss_rate', type=float, default=0.001, help='Packet loss rate')
     parser.add_argument('--seed', type=int, default=1234, help='Random seed')
     parser.add_argument('--model_name', type=str, default='openai-community/gpt2', help='Model name')
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
