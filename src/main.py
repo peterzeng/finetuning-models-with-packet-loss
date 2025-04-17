@@ -72,8 +72,12 @@ def main(args):
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
         num_train_epochs=epochs,
-        evaluation_strategy="epoch",
-        save_strategy="epoch",
+        learning_rate= 3e-5,
+        weight_decay=0.01,
+        evaluation_strategy="steps",
+        eval_steps=100,
+        save_steps=100,
+        save_strategy="steps",
         logging_dir=f"{args.output_dir}/logs",
         logging_steps=10,
         fp16=args.fp16,
@@ -98,7 +102,7 @@ if __name__ == "__main__":
     parser.add_argument('--loss_rate', type=float, default=0.001, help='Packet loss rate')
     parser.add_argument('--seed', type=int, default=1234, help='Random seed')
     parser.add_argument('--model_name', type=str, default='openai-community/gpt2', help='Model name')
-    parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
+    parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--fp16', action='store_true', help='Use mixed precision training')
     parser.add_argument('--output_dir', type=str, default='./output', help='Output directory')
     parser.add_argument('--dataset', '-d', type=str, default='winogrande', choices=['winogrande', 'sst2'], 

@@ -39,4 +39,3 @@ class DistributedTrainer(Trainer):
             param.grad = averaged_gradients[name]
         
         return total_loss / self.num_nodes
-
