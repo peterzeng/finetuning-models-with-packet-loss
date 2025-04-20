@@ -24,11 +24,39 @@ def main(args):
         text_tokenizer = AutoTokenizer.from_pretrained("google-bert/bert-large-uncased")
 
         def preprocess(data):
-            question = data["sentence"] + "\n" + data["option1"] + "\n" + data["option2"]
+            # Improve Winogrande preprocessing by formatting the input as a choice task
+            # Replace the placeholder '_' with each option and tokenize separately
+            sentence = data["sentence"]
+            option1 = data["option1"]
+            option2 = data["option2"]
+            
+            # Find the placeholder marker in the sentence
+            if "_" in sentence:
+                placeholder = "_"
+            else:
+                # Some versions might use a different placeholder
+                placeholder = "___"
+                
+            # Create two complete sentences with each option
+            sentence1 = sentence.replace(placeholder, option1)
+            sentence2 = sentence.replace(placeholder, option2)
+            
+            # Use the correct option as the answer
             label = 0 if data["answer"] == '1' else 1
+            
+            # Tokenize for binary classification - encode each option separately
+            encodings = text_tokenizer(
+                [sentence1, sentence2],
+                truncation=True,
+                padding="max_length", 
+                max_length=256,
+                return_tensors="pt"
+            )
+            
+            # Select the encoding of the correct option
             return {
-                'input_ids': text_tokenizer(question, truncation=True, padding="max_length", max_length=512)["input_ids"],
-                'attention_mask': text_tokenizer(question, truncation=True, padding="max_length", max_length=512)["attention_mask"],
+                'input_ids': encodings["input_ids"][label].tolist(),
+                'attention_mask': encodings["attention_mask"][label].tolist(),
                 'labels': label
             }
         
@@ -57,6 +85,54 @@ def main(args):
         
         train_dataset = train_dataset.map(preprocess, remove_columns=["sentence", "idx", "label"])
         eval_dataset = eval_dataset.map(preprocess, remove_columns=["sentence", "idx", "label"])
+    
+    elif args.dataset == "cola":
+        dataset = load_dataset("glue", "cola")
+        train_dataset = dataset["train"]
+        eval_dataset = dataset["validation"]
+        
+        # Apply sample limit if specified
+        if args.max_samples > 0:
+            train_dataset = train_dataset.select(range(min(args.max_samples, len(train_dataset))))
+            eval_dataset = eval_dataset.select(range(min(args.max_samples // 5, len(eval_dataset))))
+            
+        model = AutoModelForSequenceClassification.from_pretrained("google-bert/bert-large-uncased", num_labels=2)
+        text_tokenizer = AutoTokenizer.from_pretrained("google-bert/bert-large-uncased")
+        
+        def preprocess(data):
+            return {
+                'input_ids': text_tokenizer(data["sentence"], truncation=True, padding="max_length", max_length=128)["input_ids"],
+                'attention_mask': text_tokenizer(data["sentence"], truncation=True, padding="max_length", max_length=128)["attention_mask"],
+                'labels': data["label"]
+            }
+        
+        train_dataset = train_dataset.map(preprocess, remove_columns=["sentence", "idx", "label"])
+        eval_dataset = eval_dataset.map(preprocess, remove_columns=["sentence", "idx", "label"])
+        
+    elif args.dataset == "mnli":
+        dataset = load_dataset("glue", "mnli")
+        train_dataset = dataset["train"]
+        eval_dataset = dataset["validation_matched"]  # Using matched validation set
+        
+        # Apply sample limit if specified
+        if args.max_samples > 0:
+            train_dataset = train_dataset.select(range(min(args.max_samples, len(train_dataset))))
+            eval_dataset = eval_dataset.select(range(min(args.max_samples // 5, len(eval_dataset))))
+            
+        model = AutoModelForSequenceClassification.from_pretrained("google-bert/bert-large-uncased", num_labels=3)
+        text_tokenizer = AutoTokenizer.from_pretrained("google-bert/bert-large-uncased")
+        
+        def preprocess(data):
+            return {
+                'input_ids': text_tokenizer(data["premise"], data["hypothesis"], 
+                                          truncation=True, padding="max_length", max_length=128)["input_ids"],
+                'attention_mask': text_tokenizer(data["premise"], data["hypothesis"], 
+                                               truncation=True, padding="max_length", max_length=128)["attention_mask"],
+                'labels': data["label"]
+            }
+        
+        train_dataset = train_dataset.map(preprocess, remove_columns=["premise", "hypothesis", "idx", "label"])
+        eval_dataset = eval_dataset.map(preprocess, remove_columns=["premise", "hypothesis", "idx", "label"])
         
     else:
         raise ValueError(f"Unsupported dataset: {args.dataset}")
