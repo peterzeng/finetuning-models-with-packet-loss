@@ -14,13 +14,14 @@ class DistributedTrainer(Trainer):
         for name, param in self.model.named_parameters():
             self.backup_weights[name] = param.data.clone()
 
+
     def training_step(self, model, inputs, num_items_in_batch=0):
 
         num_items_in_batch = len(inputs[list(inputs.keys())[0]])
         minibatch_size = num_items_in_batch // self.num_nodes
         averaged_gradients = {k:torch.zeros_like(v, device=model.device) for k, v in model.named_parameters() if v.requires_grad}
         
-        total_loss = torch.tensor(0.0, device=next(model.parameters()).device)
+        total_loss = torch.tensor(0.0, device=next(model.parameters()).device, dtype=torch.float16 if self.args.fp16 else torch.float32)
         for name, param in model.named_parameters():
             self.backup_weights[name] = param.data.clone()    
 
@@ -28,22 +29,23 @@ class DistributedTrainer(Trainer):
             
             for name, param in model.named_parameters():
                 mask = self.network.send(param.data)
-                param.data = self.network.receive(param.data, mask)
+                param.data = self.network.receive(param.data, mask) ## This simulates the packet loss during broadcasting 
+
             inputs_split = {k: v[i * minibatch_size:(i + 1) * minibatch_size] for k, v in inputs.items()}
             
-            with self.compute_loss_context_manager():
-                loss, outputs = self.compute_loss(model, inputs_split, return_outputs=True)
-            
-            loss.backward() 
-            
-
+            if self.args.fp16:
+                with torch.amp.autocast('cuda'):
+                    loss = self.compute_loss(model, inputs_split)
+            else:
+                loss = self.compute_loss(model, inputs_split)
+            loss = loss / self.num_nodes
+            loss.backward()
             total_loss = total_loss + loss.detach()  # Add to total_loss for reporting
 
             for name,param in model.named_parameters():
                 mask = self.network.send(param.grad)
                 averaged_gradients[name] = averaged_gradients[name]+ self.network.receive(param.grad, mask)
 
-        averaged_gradients = {k: v / self.num_nodes for k, v in averaged_gradients.items()}
         
         for name, param in model.named_parameters():
             param.grad = averaged_gradients[name]

@@ -49,6 +49,7 @@ def main(args):
         logging_dir=f"{output_dir}/logs",
         logging_steps=10,
         fp16=args.fp16,
+        half_precision_backend='apex',
         report_to="wandb"
     )
 

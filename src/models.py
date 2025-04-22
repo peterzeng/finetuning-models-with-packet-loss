@@ -1,5 +1,5 @@
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
-
+import torch
 
 def get_classifier_and_tokenizer(model_name, num_labels=2):
     """
