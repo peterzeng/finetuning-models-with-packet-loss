@@ -38,7 +38,7 @@ class DistributedTrainer(Trainer):
                     loss = self.compute_loss(model, inputs_split)
             else:
                 loss = self.compute_loss(model, inputs_split)
-            loss = loss / self.num_nodes
+
             loss.backward()
             total_loss = total_loss + loss.detach()  # Add to total_loss for reporting
 

@@ -73,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_nodes', type=int, default=2, help='Number of nodes')
     parser.add_argument('--loss_rate', type=float, default=0.001, help='Packet loss rate')
     parser.add_argument('--seed', type=int, default=1234, help='Random seed')
-    parser.add_argument('--model_name', type=str, default='google-bert/bert-base-uncased', help='Model name')
+    parser.add_argument('--model_name', type=str, default='meta-llama/Llama-3.2-1B', help='Model name')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--fp16', action='store_true', help='Use mixed precision training')
     parser.add_argument('--output_dir', type=str, default='./output', help='Output directory')
