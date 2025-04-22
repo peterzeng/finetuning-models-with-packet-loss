@@ -9,6 +9,10 @@ class DistributedTrainer(Trainer):
         super().__init__(*args, **kwargs)
         self.num_nodes = num_nodes
         self.network = network
+        self.backup_weights = {}
+        # fill backup_weights with the model weights
+        for name, param in self.model.named_parameters():
+            self.backup_weights[name] = param.data.clone()
 
     def training_step(self, model, inputs, num_items_in_batch=0):
 
@@ -17,14 +21,21 @@ class DistributedTrainer(Trainer):
         averaged_gradients = {k:torch.zeros_like(v, device=model.device) for k, v in model.named_parameters() if v.requires_grad}
         
         total_loss = torch.tensor(0.0, device=next(model.parameters()).device)
-        
+        for name, param in model.named_parameters():
+            self.backup_weights[name] = param.data.clone()    
+
         for i in range(self.num_nodes):
+            
+            for name, param in model.named_parameters():
+                mask = self.network.send(param.data)
+                param.data = self.network.receive(param.data, mask)
             inputs_split = {k: v[i * minibatch_size:(i + 1) * minibatch_size] for k, v in inputs.items()}
             
             with self.compute_loss_context_manager():
                 loss, outputs = self.compute_loss(model, inputs_split, return_outputs=True)
             
             loss.backward() 
+            
 
             total_loss = total_loss + loss.detach()  # Add to total_loss for reporting
 
@@ -36,6 +47,9 @@ class DistributedTrainer(Trainer):
         
         for name, param in model.named_parameters():
             param.grad = averaged_gradients[name]
+
+        for name, param in model.named_parameters():
+            param.data = self.backup_weights[name]  # Restore the original weights
         
         return total_loss / self.num_nodes
 
