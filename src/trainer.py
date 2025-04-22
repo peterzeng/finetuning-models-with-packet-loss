@@ -28,13 +28,10 @@ class DistributedTrainer(Trainer):
 
             total_loss = total_loss + loss.detach()  # Add to total_loss for reporting
 
-
             for name,param in model.named_parameters():
                 mask = self.network.send(param.grad)
                 averaged_gradients[name] = averaged_gradients[name]+ self.network.receive(param.grad, mask)
 
-            model.zero_grad()
-            
         averaged_gradients = {k: v / self.num_nodes for k, v in averaged_gradients.items()}
         
         for name, param in model.named_parameters():

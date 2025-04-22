@@ -1,21 +1,21 @@
 from comms import LossyNetwork
 from trainer import DistributedTrainer, MyClassifierCallback, compute_classfication_metrics
 from data import get_dataset
-from transformers import TrainingArguments, AutoModelForSequenceClassification, AutoTokenizer
+from transformers import TrainingArguments
 import torch
-
+from models import get_classifier_and_tokenizer
 
 def main(args):
     network = LossyNetwork(loss_rate=args.loss_rate)
     network.set_seed(args.seed)
 
-    model = AutoModelForSequenceClassification.from_pretrained(args.model_name)
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+
+    model, tokenizer = get_classifier_and_tokenizer(args.model_name)
     train_dataset, eval_dataset = get_dataset(args, tokenizer)
 
         
     callback_args = {
-        'report_ttac' : [0.5, 0.7, 0.9], #TODO change this for each dataset/model
+        'report_ttac' : [0.5, 0.7, 0.9], #TODO change this for each dataset from yaml file
         'report_file' : f"{args.output_dir}/ttac_report.txt",
         'target_acc': 0.95
     }
@@ -61,18 +61,19 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--fp16', action='store_true', help='Use mixed precision training')
     parser.add_argument('--output_dir', type=str, default='./output', help='Output directory')
-    parser.add_argument('--dataset', '-d', type=str, default='winogrande', choices=['winogrande', 'sst2'], 
-                        help='Dataset to use for training (winogrande or sst2)')
+    parser.add_argument('--dataset', '-d', type=str, default='winogrande', 
+                        help='Dataset to use for training')
     parser.add_argument('--max_samples', type=int, default=0, 
                         help='Maximum number of training samples to use (0 for all)')
     parser.add_argument('--epochs', type=int, default=3, 
                         help='Number of training epochs')
-    parser.add_argument('--max_length', type=int, default=128,
+    parser.add_argument('--max_length', type=int, default=256,
                         help='Maximum sequence length for tokenization')
     parser.add_argument('--eval_steps', type=int, default=100)
     parser.add_argument('--save_steps', type=int, default=100)
     parser.add_argument('--logging_steps', type=int, default=10)
     parser.add_argument('--learning_rate', type=float, default=3e-5)
+    parser.add_argument('--run_id', type=str, required=True)
     args = parser.parse_args()
     
     main(args)
