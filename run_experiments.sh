@@ -11,6 +11,8 @@ NUM_NODES=("2" "4" "6")
 PRECISION=("32")
 # PRECISION=("16" "32")
 
+# GPU settings
+export CUDA_VISIBLE_DEVICES=0  # Set which GPU to use (0, 1, etc. or multiple like "0,1")
 
 # Create output directory if it doesn't exist
 mkdir -p output
