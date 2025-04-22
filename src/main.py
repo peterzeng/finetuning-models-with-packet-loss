@@ -2,26 +2,41 @@ from comms import LossyNetwork
 from trainer import DistributedTrainer, MyClassifierCallback, compute_classfication_metrics
 from data import get_dataset
 from transformers import TrainingArguments
-import torch
+import os
+import yaml
 from models import get_classifier_and_tokenizer
 
 def main(args):
+
+    with open("config.yaml") as config:
+        try:
+            dataset_config = yaml.safe_load(config)
+        except yaml.YAMLError as exc:
+            print(exc)
+    
+    dataset_config = dataset_config[args.dataset]
     network = LossyNetwork(loss_rate=args.loss_rate)
     network.set_seed(args.seed)
 
-
-    model, tokenizer = get_classifier_and_tokenizer(args.model_name)
+    model, tokenizer = get_classifier_and_tokenizer(args.model_name, num_labels=dataset_config['num_labels'])
     train_dataset, eval_dataset = get_dataset(args, tokenizer)
 
         
     callback_args = {
-        'report_ttac' : [0.5, 0.7, 0.9], #TODO change this for each dataset from yaml file
+        'report_ttac' : dataset_config['report_ttac'],
         'report_file' : f"{args.output_dir}/ttac_report.txt",
-        'target_acc': 0.95
+        'target_acc': dataset_config['target_acc'],
     }
+
+    output_dir = f"{args.output_dir}/{args.run_id}"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    with open(f"{output_dir}/args.yaml", "w") as f:
+        yaml.dump(vars(args), f)
+    args.output_dir = output_dir
     callback = MyClassifierCallback(callback_args)
     training_args = TrainingArguments(
-        output_dir=args.output_dir,
+        output_dir=output_dir,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
         num_train_epochs=args.epochs,
@@ -31,7 +46,7 @@ def main(args):
         eval_steps=args.eval_steps,
         save_steps=args.save_steps,
         save_strategy="steps",
-        logging_dir=f"{args.output_dir}/logs",
+        logging_dir=f"{output_dir}/logs",
         logging_steps=10,
         fp16=args.fp16,
         report_to="wandb"

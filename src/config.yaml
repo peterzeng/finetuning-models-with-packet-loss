@@ -1,8 +1,14 @@
 winogrande:
+  num_labels: 2
   report_ttac: [0.5, 0.6, 0.7]
   target_acc: 0.75
 
 sst2:
+  num_labels: 2
   report_ttac: [0.7, 0.8, 0.9]
   target_acc: 0.95
 
+arc:
+  num_labels: 4
+  report_ttac: [0.4, 0.6, 0.7]
+  target_acc: 0.7

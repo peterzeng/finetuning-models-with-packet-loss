@@ -9,6 +9,8 @@ def get_dataset(args, tokenizer):
         return get_mnli(tokenizer, args)
     elif args.dataset == "winogrande":
         return get_winogrande(tokenizer, args)
+    elif args.dataset == "arc":
+        return get_arc(tokenizer, args)
     else:
         raise ValueError(f"Dataset {args.dataset} not supported.")
 
@@ -117,3 +119,35 @@ def get_mnli(tokenizer, args):
     eval_dataset = eval_dataset.map(preprocess, remove_columns=["premise", "hypothesis", "idx", "label"])
 
     return train_dataset, eval_dataset
+
+def get_arc(tokenizer, args):
+
+    keys = {
+        'A': 0, 'B': 1, 'C': 2, 'D': 3, '1': 0, '2': 1, '3': 2, '4': 3,
+    }
+    max_length = args.max_length if args.max_length > 0 else 256
+    dataset = load_dataset("allenai/ai2_arc", "ARC-Easy")
+    train_dataset = dataset["train"]
+    eval_dataset = dataset["validation"]
+    def preprocess(data):
+
+        question = data['question']
+        choices = list(zip(data['choices']['text'], data['choices']['label']))
+        
+        choices = ' '.join([f"{label}: {text}" for text, label in choices])
+        question = f"{question}\n\n{choices}"
+        return {
+            'input_ids': tokenizer(question, truncation=True, padding="max_length", max_length=max_length)["input_ids"],
+            'attention_mask': tokenizer(question, truncation=True, padding="max_length", max_length=max_length)["attention_mask"],
+            'labels': keys.get(data["answerKey"], -1)
+        }
+        
+    train_dataset = train_dataset.map(preprocess, remove_columns=["question", "answerKey", "choices"])
+    eval_dataset = eval_dataset.map(preprocess, remove_columns=["question", "answerKey", "choices"])
+
+    # Filter out invalid labels
+    train_dataset = train_dataset.filter(lambda x: x['labels'] != -1)
+    eval_dataset = eval_dataset.filter(lambda x: x['labels'] != -1)
+
+    return train_dataset, eval_dataset
+

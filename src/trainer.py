@@ -68,8 +68,3 @@ class MyClassifierCallback(TrainerCallback):
                     f.write(f"Accuracy: {accuracy:.3f}, Threshold: {ac},  Step: {state.global_step}\n")
                 break
         return super().on_evaluate(args, state, control, **kwargs)
-    
-
-    def on_log(self, args, state, control, **kwargs):
-
-        return super().on_log(args, state, control, **kwargs)
