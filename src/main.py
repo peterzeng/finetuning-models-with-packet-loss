@@ -21,12 +21,6 @@ def main(args):
     model, tokenizer = get_classifier_and_tokenizer(args.model_name, num_labels=dataset_config['num_labels'])
     train_dataset, eval_dataset = get_dataset(args, tokenizer)
 
-        
-    callback_args = {
-        'report_ttac' : dataset_config['report_ttac'],
-        'report_file' : f"{args.output_dir}/ttac_report.txt",
-        'target_acc': dataset_config['target_acc'],
-    }
 
     output_dir = f"{args.output_dir}/{args.run_id}"
     if not os.path.exists(output_dir):
@@ -34,6 +28,11 @@ def main(args):
     with open(f"{output_dir}/args.yaml", "w") as f:
         yaml.dump(vars(args), f)
     args.output_dir = output_dir
+    callback_args = {
+        'report_ttac' : dataset_config['report_ttac'],
+        'report_file' : f"{args.output_dir}/ttac_report.txt",
+        'target_acc': dataset_config['target_acc'],
+    }
     callback = MyClassifierCallback(callback_args)
     training_args = TrainingArguments(
         output_dir=output_dir,
@@ -46,6 +45,8 @@ def main(args):
         eval_steps=args.eval_steps,
         save_steps=args.save_steps,
         save_strategy="steps",
+        save_total_limit=2,
+        metric_for_best_model="accuracy",
         logging_dir=f"{output_dir}/logs",
         logging_steps=10,
         fp16=args.fp16,
