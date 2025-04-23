@@ -86,7 +86,7 @@ if __name__ == "__main__":
                         help='Number of training epochs')
     parser.add_argument('--max_length', type=int, default=256,
                         help='Maximum sequence length for tokenization')
-    parser.add_argument('--eval_steps', type=int, default=100)
+    parser.add_argument('--eval_steps', type=int, default=50)
     parser.add_argument('--save_steps', type=int, default=100)
     parser.add_argument('--logging_steps', type=int, default=10)
     parser.add_argument('--learning_rate', type=float, default=3e-5)
