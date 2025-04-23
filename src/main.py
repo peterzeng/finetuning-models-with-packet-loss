@@ -36,8 +36,8 @@ def main(args):
     callback = MyClassifierCallback(callback_args)
     training_args = TrainingArguments(
         output_dir=output_dir,
-        per_device_train_batch_size=args.batch_size/4 if args.num_nodes == 2 else args.batch_size,
-        per_device_eval_batch_size=args.batch_size/4 if args.num_nodes == 2 else args.batch_size,
+        per_device_train_batch_size=int(args.batch_size/4) if args.num_nodes == 2 else args.batch_size,
+        per_device_eval_batch_size=int(args.batch_size/4) if args.num_nodes == 2 else args.batch_size,
         num_train_epochs=args.epochs,
         learning_rate= args.learning_rate,
         weight_decay=0.01,
@@ -50,7 +50,6 @@ def main(args):
         logging_dir=f"{output_dir}/logs",
         logging_steps=10,
         fp16=args.fp16,
-        half_precision_backend='apex',
         report_to="wandb"
     )
 

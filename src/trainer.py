@@ -33,22 +33,25 @@ class DistributedTrainer(Trainer):
 
             inputs_split = {k: v[i * minibatch_size:(i + 1) * minibatch_size] for k, v in inputs.items()}
             
+            # Let Transformers Trainer handle FP16 internally
+            loss = self.compute_loss(model, inputs_split)
+            
+            # Handle fp16 properly by using the accelerator for backward pass
             if self.args.fp16:
-                with torch.amp.autocast('cuda'):
-                    loss = self.compute_loss(model, inputs_split)
+                self.accelerator.backward(loss)
             else:
-                loss = self.compute_loss(model, inputs_split)
-
-            loss.backward()
+                loss.backward()
+                
             total_loss = total_loss + loss.detach()  # Add to total_loss for reporting
 
             for name,param in model.named_parameters():
-                mask = self.network.send(param.grad)
-                averaged_gradients[name] = averaged_gradients[name]+ self.network.receive(param.grad, mask)
+                if param.grad is not None:  # Check if grad exists to avoid NoneType errors
+                    mask = self.network.send(param.grad)
+                    averaged_gradients[name] = averaged_gradients[name] + self.network.receive(param.grad, mask)
 
-        
         for name, param in model.named_parameters():
-            param.grad = averaged_gradients[name]
+            if param.requires_grad:
+                param.grad = averaged_gradients[name]
 
         for name, param in model.named_parameters():
             param.data = self.backup_weights[name]  # Restore the original weights
