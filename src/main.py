@@ -8,7 +8,7 @@ from models import get_classifier_and_tokenizer
 
 def main(args):
 
-    with open("config.yaml") as config:
+    with open("src/config.yaml") as config:
         try:
             dataset_config = yaml.safe_load(config)
         except yaml.YAMLError as exc:
