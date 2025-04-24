@@ -11,6 +11,8 @@ def get_dataset(args, tokenizer):
         return get_winogrande(tokenizer, args)
     elif args.dataset == "arc":
         return get_arc(tokenizer, args)
+    elif args.dataset == "hellaswag":
+        return get_hellaswag(tokenizer, args)
     else:
         raise ValueError(f"Dataset {args.dataset} not supported.")
 
@@ -149,5 +151,48 @@ def get_arc(tokenizer, args):
     train_dataset = train_dataset.filter(lambda x: x['labels'] != -1)
     eval_dataset = eval_dataset.filter(lambda x: x['labels'] != -1)
 
+    return train_dataset, eval_dataset
+
+def get_hellaswag(tokenizer, args):
+    max_length = args.max_length if args.max_length > 0 else 256
+    dataset = load_dataset("hellaswag")
+    
+    # Limit dataset size if specified
+    train_dataset = dataset["train"]
+    eval_dataset = dataset["validation"]
+    
+    if args.max_samples > 0:
+        train_dataset = train_dataset.select(range(min(args.max_samples, len(train_dataset))))
+    
+    def preprocess(data):
+        # Format context and endings for multiple choice
+        context = data["ctx"]
+        endings = data["endings"]
+        
+        # Format as multiple choice
+        choices = [f"{context} {ending}" for ending in endings]
+        
+        # Create encodings for all choices
+        encodings = tokenizer(
+            choices,
+            truncation=True,
+            padding="max_length",
+            max_length=max_length,
+            return_tensors="pt"
+        )
+        
+        # Get label (correct ending index)
+        label = int(data["label"])
+        
+        return {
+            'input_ids': encodings["input_ids"][label].tolist(),
+            'attention_mask': encodings["attention_mask"][label].tolist(),
+            'labels': label
+        }
+    
+    # Map preprocessing function to datasets
+    train_dataset = train_dataset.map(preprocess, remove_columns=["ctx", "endings", "label", "activity_label", "source_id"])
+    eval_dataset = eval_dataset.map(preprocess, remove_columns=["ctx", "endings", "label", "activity_label", "source_id"])
+    
     return train_dataset, eval_dataset
 
