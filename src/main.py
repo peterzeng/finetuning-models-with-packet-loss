@@ -18,7 +18,7 @@ def main(args):
     network = LossyNetwork(loss_rate=args.loss_rate)
     network.set_seed(args.seed)
 
-    model, tokenizer = get_classifier_and_tokenizer(args.model_name, num_labels=dataset_config['num_labels'])
+    model, tokenizer = get_classifier_and_tokenizer(args.model_name, num_labels=dataset_config['num_labels'], num_unfrozen_layers=args.num_unfrozen_layers)
     train_dataset, eval_dataset = get_dataset(args, tokenizer)
 
 
@@ -36,8 +36,8 @@ def main(args):
     callback = MyClassifierCallback(callback_args)
     training_args = TrainingArguments(
         output_dir=output_dir,
-        per_device_train_batch_size=int(args.batch_size/4) if args.num_nodes == 2 else args.batch_size,
-        per_device_eval_batch_size=int(args.batch_size/4) if args.num_nodes == 2 else args.batch_size,
+        per_device_train_batch_size=args.batch_size,
+        per_device_eval_batch_size=args.batch_size,
         num_train_epochs=args.epochs,
         learning_rate= args.learning_rate,
         weight_decay=0.01,
@@ -90,6 +90,8 @@ if __name__ == "__main__":
     parser.add_argument('--logging_steps', type=int, default=10)
     parser.add_argument('--learning_rate', type=float, default=3e-5)
     parser.add_argument('--run_id', type=str, required=True)
+    parser.add_argument('-nunf', '--num_unfrozen_layers', type=int, default=None, 
+                        help='Number of unfrozen layers in the model')
     args = parser.parse_args()
     
     main(args)

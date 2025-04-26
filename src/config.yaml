@@ -17,3 +17,8 @@ hellaswag:
   num_labels: 4
   report_ttac: [0.5, 0.6, 0.7]
   target_acc: 0.8
+
+piqa:
+  num_labels: 2
+  report_ttac: [0.5, 0.7, 0.8]
+  target_acc: 0.85
