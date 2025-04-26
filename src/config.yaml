@@ -22,3 +22,8 @@ piqa:
   num_labels: 2
   report_ttac: [0.5, 0.7, 0.8]
   target_acc: 0.85
+
+mnli:
+  num_labels: 3
+  report_ttac: [0.4, 0.5, 0.6]
+  target_acc: 0.6
