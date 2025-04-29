@@ -27,3 +27,8 @@ mnli:
   num_labels: 3
   report_ttac: [0.4, 0.5, 0.6]
   target_acc: 0.6
+
+cosmosqa:
+  num_labels: 4
+  report_ttac: [0.25, 0.35, 0.50]
+  target_acc: 0.50
