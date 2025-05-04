@@ -3,8 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colormaps
 import os
 
-colors = ['#9edfd8','#81bab3','#357d8d','#072635', 'black']
-# colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
 def plot_steps_vs_nodes(data, dataset_name, save_path, accuracy_threshold=0.75):
     # plt.rcParams.update({'font.size': 16})  # Set base font size
