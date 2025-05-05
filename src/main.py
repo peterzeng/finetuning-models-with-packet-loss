@@ -8,31 +8,37 @@ from models import get_classifier_and_tokenizer
 
 def main(args):
 
-    with open("src/config.yaml") as config:
+    with open("src/dataset_config.yaml") as config:
         try:
             dataset_config = yaml.safe_load(config)
         except yaml.YAMLError as exc:
             print(exc)
     
     dataset_config = dataset_config[args.dataset]
-    network = LossyNetwork(loss_rate=args.loss_rate)
+    network = LossyNetwork(args)
     network.set_seed(args.seed)
 
+    # for tasks other than classification you will need to modify the callback and the compute_metrics function, as well as get model and tokenizer
     model, tokenizer = get_classifier_and_tokenizer(args.model_name, num_labels=dataset_config['num_labels'], num_unfrozen_layers=args.num_unfrozen_layers)
     train_dataset, eval_dataset = get_dataset(args, tokenizer)
 
 
     output_dir = f"{args.output_dir}/{args.run_id}"
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
+
     with open(f"{output_dir}/args.yaml", "w") as f:
-        yaml.dump(vars(args), f)
+        yaml.dump(vars(args), f) # for reproducibility
+
     args.output_dir = output_dir
-    callback_args = {
+
+    callback_args = { # report time to accuracy #TODO change this to "steps to accuracy"
         'report_ttac' : dataset_config['report_ttac'],
         'report_file' : f"{args.output_dir}/ttac_report.txt",
         'target_acc': dataset_config['target_acc'],
     }
+
     callback = MyClassifierCallback(callback_args)
     training_args = TrainingArguments(
         output_dir=output_dir,
@@ -91,7 +97,7 @@ if __name__ == "__main__":
     parser.add_argument('--learning_rate', type=float, default=3e-5)
     parser.add_argument('--run_id', type=str, required=True)
     parser.add_argument('-nunf', '--num_unfrozen_layers', type=int, default=None, 
-                        help='Number of unfrozen layers in the model')
+                        help='Number of unfrozen layers in the model. If None, all layers are unfrozen.')
     args = parser.parse_args()
     
     main(args)

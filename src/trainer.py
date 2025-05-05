@@ -1,4 +1,4 @@
-from transformers import Trainer, TrainingArguments, TrainerCallback
+from transformers import Trainer, TrainerCallback
 import torch
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score
@@ -33,10 +33,8 @@ class DistributedTrainer(Trainer):
 
             inputs_split = {k: v[i * minibatch_size:(i + 1) * minibatch_size] for k, v in inputs.items()}
             
-            # Let Transformers Trainer handle FP16 internally
             loss = self.compute_loss(model, inputs_split)
             
-            # Handle fp16 properly by using the accelerator for backward pass
             if self.args.fp16:
                 self.accelerator.backward(loss)
             else:
@@ -45,7 +43,7 @@ class DistributedTrainer(Trainer):
             total_loss = total_loss + loss.detach()  # Add to total_loss for reporting
 
             for name,param in model.named_parameters():
-                if param.grad is not None:  # Check if grad exists to avoid NoneType errors
+                if param.grad is not None: 
                     mask = self.network.send(param.grad)
                     averaged_gradients[name] = averaged_gradients[name] + self.network.receive(param.grad, mask)
 

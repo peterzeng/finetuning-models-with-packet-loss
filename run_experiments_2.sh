@@ -2,16 +2,16 @@
 
 # Set the model name
 MODEL="meta-llama/Llama-3.2-1B"
-DATASET="piqa"
+DATASET="winogrande"
 
 # Arrays for the different parameters
 # LOSS_RATES=("0")
 LOSS_RATES=("0.0" "0.001" "0.005" "0.01")
 NUM_NODES=("2" "4" "6")
-PRECISION=("32")
+PRECISION=("16")
 # PRECISION=("16" "32")
 # GPU settings
-export CUDA_VISIBLE_DEVICES=0  # Selst which GPU to use (0, 1, etc. or multiple like "0,1")
+export CUDA_VISIBLE_DEVICES=1  # Selst which GPU to use (0, 1, etc. or multiple like "0,1")
 
 # Create output directory if it doesn't exist
 mkdir -p output
@@ -36,9 +36,9 @@ for loss_rate in "${LOSS_RATES[@]}"; do
         --loss_rate "$loss_rate" \
         --num_nodes "$nodes" \
         --batch_size $((16 * ${nodes})) \
-        --learning_rate 2e-5 \
+        --learning_rate 1e-5 \
         $fp16_flag \
-        -nunf 3 \
+        -nunf 2 \
         --run_id "$run_id" \
         --epochs 4
       

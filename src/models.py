@@ -1,5 +1,4 @@
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
-import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoModelForQuestionAnswering
 
 def get_classifier_and_tokenizer(model_name, num_labels=2, num_unfrozen_layers=None):
     """
