@@ -64,21 +64,21 @@ class GillbertElliotLossyNetwork(LossyNetwork):
                 self.state = 'good'
         return self.state
             
-    # def send_alternative(self, data: torch.Tensor) -> torch.Tensor:
-    #     self.take_step()
-    #     num_packets = get_num_packets(data)
-    #     if self.state == 'good':
-    #         packets_mask = torch.rand(num_packets) > self.good_loss_rate
-    #     else:
-    #         packets_mask = torch.rand(num_packets) > self.bad_loss_rate
-    #     return packets_mask
-
-
-    def send(self, data:torch.Tensor):
+    def send(self, data: torch.Tensor) -> torch.Tensor:
+        self.take_step()
         num_packets = get_num_packets(data)
-        step_per_packet = [self.take_step() for _ in range(num_packets)]
-        packets_mask = torch.tensor([
-            torch.rand(1).item() > (self.good_loss_rate if step == 'good' else self.bad_loss_rate)
-            for step in step_per_packet
-        ], device=data.device)
+        if self.state == 'good':
+            packets_mask = torch.rand(num_packets) > self.good_loss_rate
+        else:
+            packets_mask = torch.rand(num_packets) > self.bad_loss_rate
         return packets_mask
+
+
+    # def send_alternative(self, data:torch.Tensor):
+    #     num_packets = get_num_packets(data)
+    #     step_per_packet = [self.take_step() for _ in range(num_packets)]
+    #     packets_mask = torch.tensor([
+    #         torch.rand(1).item() > (self.good_loss_rate if step == 'good' else self.bad_loss_rate)
+    #         for step in step_per_packet
+    #     ], device=data.device)
+    #     return packets_mask
