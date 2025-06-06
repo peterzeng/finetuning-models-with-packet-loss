@@ -201,30 +201,44 @@ def get_hellaswag(tokenizer, args):
         context = data["ctx"]
         endings = data["endings"]
         
-        # Format as multiple choice
-        choices = [f"{context} {ending}" for ending in endings]
         
-        # Create encodings for all choices
-        encodings = tokenizer(
-            choices,
+        prefix = "Which of the following is the most likely continuation of the context?\n\n"
+        question = f"{prefix}{context}\n\n Choices:\n"
+        choices = [f"{i+1}: {ending}" for i, ending in enumerate(endings)]
+        question += "\n".join(choices)
+
+        question_encoded = tokenizer(
+            question,
             truncation=True,
             padding="max_length",
             max_length=max_length,
-            return_tensors="pt"
         )
-        
-        # Get label (correct ending index)
-        label = int(data["label"])
-        
         return {
-            'input_ids': encodings["input_ids"][label].tolist(),
-            'attention_mask': encodings["attention_mask"][label].tolist(),
-            'labels': label
+            'input_ids': question_encoded["input_ids"],
+            'attention_mask': question_encoded["attention_mask"],
+            'labels': int(data["label"])
         }
+
+        # Create encodings for all choices
+        # encodings = tokenizer(
+        #     choices,
+        #     truncation=True,
+        #     padding="max_length",
+        #     max_length=max_length,
+        #     return_tensors="pt"
+        # )
+        
+        # # Get label (correct ending index)
+        # label = int(data["label"])
+        # return {
+        #     'input_ids': encodings["input_ids"][label].tolist(),
+        #     'attention_mask': encodings["attention_mask"][label].tolist(),
+        #     'labels': label
+        # }
     
     # Map preprocessing function to datasets
-    train_dataset = train_dataset.map(preprocess, remove_columns=["ctx", "endings", "label", "activity_label", "source_id"])
-    eval_dataset = eval_dataset.map(preprocess, remove_columns=["ctx", "endings", "label", "activity_label", "source_id"])
+    train_dataset = train_dataset.map(preprocess, remove_columns=["ctx_a", "ctx_b","ctx", "endings", "label", "activity_label", "source_id"])
+    eval_dataset = eval_dataset.map(preprocess, remove_columns=["ctx_a", "ctx_b","ctx", "endings", "label", "activity_label", "source_id"])
     
     return train_dataset, eval_dataset
 
@@ -242,7 +256,6 @@ def get_piqa(tokenizer, args):
         input = "Which of the following is a better solution to the problem?\n\n" + f" 1) {goal} {sol1} \n 2) {goal} {sol2}"
         label = data["label"]
 
-        
         return {
             'input_ids': tokenizer(input, truncation=True, padding="max_length", max_length=max_length)["input_ids"],
             'attention_mask': tokenizer(input, truncation=True, padding="max_length", max_length=max_length)["attention_mask"],

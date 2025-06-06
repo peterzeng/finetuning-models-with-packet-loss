@@ -75,6 +75,13 @@ class MyClassifierCallback(TrainerCallback):
         super().__init__()
         self.args = args
         self.args['report_ttac'] = sorted(self.args['report_ttac'], reverse=True)
+        # if report file exists, remove it
+        try:
+            with open(self.args['report_file'], "r") as f:
+                pass
+        except FileNotFoundError:
+            with open(self.args['report_file'], "w") as f:
+                f.write("")
 
     def on_evaluate(self, args, state, control, **kwargs):
         

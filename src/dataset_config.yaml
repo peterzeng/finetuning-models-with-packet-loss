@@ -1,7 +1,7 @@
 winogrande:
   num_labels: 2
   report_ttac: [0.7, 0.8, 0.9]
-  target_acc: 0.95
+  target_acc: 0.9
 
 sst2:
   num_labels: 2
@@ -15,8 +15,8 @@ arc:
 
 hellaswag:
   num_labels: 4
-  report_ttac: [0.5, 0.6, 0.7]
-  target_acc: 0.8
+  report_ttac: [0.3, 0.5, 0.7]
+  target_acc: 0.7
 
 piqa:
   num_labels: 2
@@ -25,8 +25,8 @@ piqa:
 
 mnli:
   num_labels: 3
-  report_ttac: [0.4, 0.5, 0.6]
-  target_acc: 0.6
+  report_ttac: [0.6, 0.7, 0.75]
+  target_acc: 0.75
 
 cosmosqa:
   num_labels: 4
