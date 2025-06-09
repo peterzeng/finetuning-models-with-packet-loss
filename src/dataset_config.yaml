@@ -25,5 +25,14 @@ piqa:
 
 mnli:
   num_labels: 3
-  report_ttac: [0.4, 0.5, 0.6]
-  target_acc: 0.6
+  report_ttac: [0.6, 0.7, 0.75]
+  target_acc: 0.75
+
+quality:
+  num_labels: 4
+  report_ttac: [0.3, 0.5, 0.7]
+  target_acc: 0.75
+
+hotpotqa:
+  report_ttac: [0.1, 0.3, 0.5]
+  target_acc: 0.5

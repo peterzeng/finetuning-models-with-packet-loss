@@ -19,6 +19,8 @@ class LossyNetwork:
 
     def set_seed(self, seed: int):
         self.seed = seed
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
 
     def send(self, data: torch.Tensor) -> torch.Tensor:
         num_packets = get_num_packets(data)
@@ -55,7 +57,8 @@ class GillbertElliotLossyNetwork(LossyNetwork):
             raise ValueError("Good loss rate must be less than or equal to bad loss rate.")
         self.state = 'good'
 
-    def take_step(self):
+    def take_step(self, n_steps=1):
+        transition_probabilities = torch.rand(n_steps)
         if self.state == 'good':
             if torch.rand(1).item() < self.p_gb:
                 self.state = 'bad'

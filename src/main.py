@@ -1,5 +1,5 @@
 from comms import LossyNetwork, GillbertElliotLossyNetwork
-from trainer import DistributedTrainer, MyClassifierCallback, compute_classfication_metrics
+from trainer import DistributedTrainer, MyClassifierCallback, MyQACallback, MyQATrainer, compute_classfication_metrics, compute_exact_match_metric
 from data import get_dataset
 from transformers import TrainingArguments
 import os
@@ -7,6 +7,8 @@ import pandas as pd
 import yaml
 from models import get_classifier_and_tokenizer
 
+classification_datasets = ['winogrande', 'mnli', 'sst2', 'hellaswag', 'piqa', 'arc', 'quality']
+generation_datasets = ['hotpotqa']
 def main(args):
 
     with open("src/dataset_config.yaml") as config:
@@ -30,9 +32,16 @@ def main(args):
     network.set_seed(args.seed)
 
     # for tasks other than classification you will need to modify the callback and the compute_metrics function, as well as get model and tokenizer
-    model, tokenizer = get_classifier_and_tokenizer(args.model_name, num_labels=dataset_config['num_labels'], num_unfrozen_layers=args.num_unfrozen_layers)
-    train_dataset, eval_dataset = get_dataset(args, tokenizer)
+    if args.dataset in classification_datasets:
+        model, tokenizer = get_classifier_and_tokenizer(args.model_name, num_labels=dataset_config['num_labels'], num_unfrozen_layers=args.num_unfrozen_layers)
+        train_dataset, eval_dataset = get_dataset(args, tokenizer)
+    elif args.dataset in generation_datasets:
+        from models import get_qa_model_and_tokenizer
+        model, tokenizer = get_qa_model_and_tokenizer(args.model_name, num_unfrozen_layers=args.num_unfrozen_layers)
+        train_dataset, eval_dataset = get_dataset(args, tokenizer)
 
+    else:
+        raise ValueError(f"Unsupported dataset: {args.dataset}")
 
     output_dir = f"{args.output_dir}/{args.run_id}"
 
@@ -49,8 +58,16 @@ def main(args):
         'report_file' : f"{args.output_dir}/ttac_report.txt",
         'target_acc': dataset_config['target_acc'],
     }
-
-    callback = MyClassifierCallback(callback_args)
+    if args.dataset in generation_datasets:
+        callback_args['eos_token_id'] = tokenizer.eos_token_id
+        compute_metrics = compute_exact_match_metric(tokenizer)
+        callback = MyQACallback(callback_args)
+        trainer_class = MyQATrainer
+    else:
+        compute_metrics = compute_classfication_metrics
+        callback = MyClassifierCallback(callback_args)
+        trainer_class = DistributedTrainer
+    
     training_args = TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=args.batch_size,
@@ -62,15 +79,15 @@ def main(args):
         eval_steps=args.eval_steps,
         save_steps=args.save_steps,
         save_strategy="steps",
-        save_total_limit=2,
-        metric_for_best_model="accuracy",
+        save_total_limit=1,
+        metric_for_best_model="accuracy" if args.dataset in classification_datasets else "exact_match",
         logging_dir=f"{output_dir}/logs",
         logging_steps=10,
         fp16=args.fp16,
         report_to="wandb"
     )
 
-    trainer = DistributedTrainer(
+    trainer = trainer_class(
         num_nodes=args.num_nodes,
         network=network,
         model=model,
@@ -79,7 +96,7 @@ def main(args):
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         callbacks=[callback],
-        compute_metrics=compute_classfication_metrics,
+        compute_metrics=compute_metrics,
     )
 
     trainer.train()

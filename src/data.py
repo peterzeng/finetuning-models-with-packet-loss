@@ -15,6 +15,10 @@ def get_dataset(args, tokenizer):
         return get_hellaswag(tokenizer, args)
     elif args.dataset == "piqa": 
         return get_piqa(tokenizer, args)
+    elif args.dataset == "quality":
+        return get_quality(tokenizer, args)
+    elif args.dataset == "hotpotqa":
+        return get_hotpotqa(tokenizer, args)
     else:
         raise ValueError(f"Dataset {args.dataset} not supported.")
 
@@ -225,4 +229,66 @@ def get_piqa(tokenizer, args):
     train_dataset = train_dataset.map(preprocess, remove_columns=["goal", "sol1", "sol2", "label"])
     eval_dataset = eval_dataset.map(preprocess, remove_columns=["goal", "sol1", "sol2", "label"])
     
+    return train_dataset, eval_dataset
+
+
+def get_quality(tokenizer, args):
+    max_length = 10000
+    dataset = load_dataset("emozilla/quality", trust_remote_code=True)
+    def preprocess(data):
+        question = data["question"]
+        article = data["article"]
+        options = data["options"]
+        answer = data["answer"]
+
+        input_text = f""" Answer the question based on the article below. Choose the best answer from the options provided.\n
+        Article: {article}\n
+        Question: {question}\n
+        Options: 1. {options[0]}\n 2. {options[1]}\n 3. {options[2]}\n 4. {options[3]}\n
+        """
+        answer = int(answer)
+
+        return {
+            'input_ids': tokenizer(input_text, truncation=True, padding="max_length", max_length=max_length)["input_ids"],
+            'attention_mask': tokenizer(input_text, truncation=True, padding="max_length", max_length=max_length)["attention_mask"],
+            'labels': answer
+        }
+    
+    train_dataset = dataset["train"]
+    eval_dataset = dataset["validation"]
+    # random sample eval dataset 
+    eval_dataset = eval_dataset.shuffle(seed=args.seed).select(range(min(800, len(eval_dataset))))
+    train_dataset = train_dataset.map(preprocess, remove_columns=["question", "article", "options", "answer", "hard"])
+    eval_dataset = eval_dataset.map(preprocess, remove_columns=["question", "article", "options", "answer", "hard"])
+    return train_dataset, eval_dataset
+
+
+def get_hotpotqa(tokenizer, args):
+    max_length = args.max_length if args.max_length > 0 else 2048
+    dataset = load_dataset("hotpot_qa", "distractor")
+    def preprocess(data): 
+        context = ""
+        for i, title in enumerate(data["context"]["title"]):
+            context += f"{title}:\n {''.join(data['context']['sentences'][i])}"
+        input_text = f"""
+        Answer the question based on the context. The context is a collection of Wikipedia articles. Answer with a single word or phrase.\n
+        ## Context:\n{context}\n
+        ## Question: {data['question']}\n
+        ## Answer: {data['answer']}\n
+        """
+
+        d = {'input_ids': tokenizer(input_text, truncation=True, padding="max_length", max_length=max_length)["input_ids"],
+             'attention_mask': tokenizer(input_text, truncation=True, padding="max_length", max_length=max_length)["attention_mask"],
+             'labels': tokenizer(data['answer'], truncation=True, padding="max_length", max_length=max_length)["input_ids"]}
+        # Remove padding tokens from labels
+        d['labels'] = [label if label != tokenizer.pad_token_id else -100 for label in d['labels']]
+        return d
+    if args.max_samples > 0:
+        train_dataset = dataset['train'].shuffle(seed=args.seed).select(range(min(args.max_samples, len(dataset["train"]))))
+        eval_dataset = dataset['validation'].shuffle(seed=args.seed).select(range(min(32, len(dataset["validation"]))))
+    else:
+        train_dataset = dataset["train"]
+        eval_dataset = dataset["validation"]
+    train_dataset = train_dataset.map(preprocess)
+    eval_dataset = eval_dataset.map(preprocess)
     return train_dataset, eval_dataset
