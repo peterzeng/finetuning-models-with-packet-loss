@@ -24,9 +24,9 @@ def main(args):
     elif loss_type == 'g-e':
         configs = pd.read_csv('g_e_params.csv')
         ge_config = configs[configs['id'] == args.ge_config].iloc[0]
-        network = GillbertElliotLossyNetwork(p_bg = ge_config['p_bg'],p_gb= ge_config['p_gb'],
-                                             good_loss_rate=ge_config['good_loss_rate'],
-                                             bad_loss_rate=ge_config['bad_loss_rate'], args=args)
+        network = GillbertElliotLossyNetwork(p_bg = ge_config[' pbg'],p_gb= ge_config[' pgb'],
+                                             good_loss_rate=ge_config[' lrg'],
+                                             bad_loss_rate=ge_config[' lrb'], args=args)
     else:
         raise ValueError(f"Unsupported loss type: {loss_type}")
     network.set_seed(args.seed)

@@ -19,13 +19,17 @@ class DistributedTrainer(Trainer):
 
         num_items_in_batch = len(inputs[list(inputs.keys())[0]])
         minibatch_size = num_items_in_batch // self.num_nodes
+        if minibatch_size == 0:
+            num_nodes = 1
+        else:
+            num_nodes = self.num_nodes
         averaged_gradients = {k:torch.zeros_like(v, device=model.device) for k, v in model.named_parameters() if v.requires_grad}
         
         total_loss = torch.tensor(0.0, device=next(model.parameters()).device, dtype=torch.float16 if self.args.fp16 else torch.float32)
         for name, param in model.named_parameters():
             self.backup_weights[name] = param.data.clone()    
 
-        for i in range(self.num_nodes):
+        for i in range(num_nodes):
             
             for name, param in model.named_parameters():
                 mask = self.network.send(param.data)
@@ -54,7 +58,7 @@ class DistributedTrainer(Trainer):
         for name, param in model.named_parameters():
             param.data = self.backup_weights[name]  # Restore the original weights
         
-        return total_loss / self.num_nodes
+        return total_loss / num_nodes
 
 
 
@@ -141,6 +145,14 @@ class MyClassifierCallback(TrainerCallback):
         super().__init__()
         self.args = args
         self.args['report_ttac'] = sorted(self.args['report_ttac'])
+        self.args['report_ttac'] = sorted(self.args['report_ttac'], reverse=True)
+        # if report file exists, remove it
+        try:
+            with open(self.args['report_file'], "r") as f:
+                pass
+        except FileNotFoundError:
+            with open(self.args['report_file'], "w") as f:
+                f.write("")
 
     def on_evaluate(self, args, state, control, **kwargs):
         
