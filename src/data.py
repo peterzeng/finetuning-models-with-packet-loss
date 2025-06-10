@@ -305,7 +305,7 @@ def get_quality(tokenizer, args):
 
 
 def get_hotpotqa(tokenizer, args):
-    max_length = args.max_length if args.max_length > 0 else 2048
+    max_length = 2048
     dataset = load_dataset("hotpot_qa", "distractor")
     def preprocess(data): 
         context = ""
