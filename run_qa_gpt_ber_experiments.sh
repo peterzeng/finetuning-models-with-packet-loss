@@ -1,7 +1,7 @@
 #!/bin/bash
 #MODEL="meta-llama/Llama-3.2-1B"
-#MODEL="openai-community/gpt2-large"
-MODEL="/data01/pegah/finetuning-models-with-packet-loss/gpt2-large_output/hotpotqa/gpt2-large_2nodes_hotpotqa_lr0.0_seed10/checkpoint-700"
+MODEL="openai-community/gpt2-large"
+#MODEL="/data01/pegah/finetuning-models-with-packet-loss/gpt2-large_output/hotpotqa/gpt2-large_2nodes_hotpotqa_lr0.0_seed10/checkpoint-700"
 MODEL_ALIAS="gpt2-large"
 DATASET="hotpotqa"
 
@@ -9,7 +9,7 @@ LOSS_RATES=("0.0" "0.001" "0.005" "0.01")
 NUM_NODES=("2" "10")
 SEEDS=("10" "20" "30" "40" "50")
 # GPU settings
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=0
 export WANDB_PROJECT="new_lossy_network"
 
 # Create output directory if it doesn't exist
@@ -33,8 +33,7 @@ for loss_rate in "${LOSS_RATES[@]}"; do
         --epochs 7 \
         --seed "$seed" \
         --output_dir "$output_dir" \
-        -nunf 3 \
-	--eval_steps 50 \
+	--eval_steps 10 \
 	--max_samples 512
 	
       echo "Completed experiment: $run_id"

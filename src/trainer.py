@@ -73,12 +73,10 @@ class MyQATrainer(DistributedTrainer):
 
         model.eval()
         with torch.no_grad():
-            length = inputs["input_ids"].shape[1]
-            max_tokens = length + 20
             generated_tokens = model.generate(
                 input_ids=inputs["input_ids"],
                 attention_mask=inputs["attention_mask"],
-                max_new_tokens=max_tokens,
+                max_new_tokens=20,
                 do_sample=False,
                 eos_token_id=self.eos_token_id,
                 pad_token_id=model.config.pad_token_id
