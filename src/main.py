@@ -8,7 +8,7 @@ import yaml
 from models import get_classifier_and_tokenizer
 
 classification_datasets = ['winogrande', 'mnli', 'sst2', 'hellaswag', 'piqa', 'arc', 'quality']
-generation_datasets = ['hotpotqa']
+generation_datasets = ['hotpotqa', 'squad']
 def main(args):
 
     with open("src/dataset_config.yaml") as config:
