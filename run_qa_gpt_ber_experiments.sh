@@ -33,8 +33,10 @@ for loss_rate in "${LOSS_RATES[@]}"; do
         --epochs 7 \
         --seed "$seed" \
         --output_dir "$output_dir" \
-	--eval_steps 10 \
-	--max_samples 512
+        -nunf 3 \
+	--eval_steps 50 \
+	--max_samples 512 \
+  
 	
       echo "Completed experiment: $run_id"
       echo "--------------------------------"

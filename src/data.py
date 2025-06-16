@@ -337,7 +337,7 @@ def get_hotpotqa(tokenizer, args):
     return train_dataset, eval_dataset
 
 def get_squad(tokenizer, args):
-    max_length = args.max_length if args.max_length > 0 else 512
+    max_length = 1024
     dataset = load_dataset("rajpurkar/squad")
     
     def preprocess(data):

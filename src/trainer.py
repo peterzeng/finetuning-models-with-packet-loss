@@ -76,8 +76,8 @@ class MyQATrainer(DistributedTrainer):
             generated_tokens = model.generate(
                 input_ids=inputs["input_ids"],
                 attention_mask=inputs["attention_mask"],
-                max_new_tokens=20,
                 do_sample=False,
+                max_new_tokens=20,
                 eos_token_id=self.eos_token_id,
                 pad_token_id=model.config.pad_token_id
             )
