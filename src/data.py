@@ -340,7 +340,7 @@ def get_squad(tokenizer, args):
     max_length = 1024
     dataset = load_dataset("rajpurkar/squad")
     
-    def preprocess(data):
+    def preprocess(data, is_train=True):
         context = data["context"]
         question = data["question"]
         answer = data["answers"]["text"][0] if data["answers"]["text"] else ""
@@ -348,22 +348,21 @@ def get_squad(tokenizer, args):
         # Format as reading comprehension task (following hotpotqa pattern)
         input_text = f"""Answer the question based on the context provided. Provide a concise answer extracted from the context.
 
-Context: {context}
-
-Question: {question}
-
-Answer: {answer}"""
+        Context: {context}
         
-        # Tokenize the full input text (including answer)
+        Question: {question}"""
+        
+        answer_text = f"Answer: {answer}"
+        if is_train:
+            input_text += f"\n{answer_text} " + tokenizer.eos_token
         input_encoding = tokenizer(
             input_text,
             truncation=True,
             padding="max_length",
-            max_length=max_length
+            max_length=max_length,
+            add_special_tokens=True,
         )
         
-        # For causal LM, labels should be the same length as input_ids
-        # Create labels: same as input_ids but mask padding tokens
         labels = input_encoding["input_ids"].copy()
         labels = [label if label != tokenizer.pad_token_id else -100 for label in labels]
         
@@ -376,17 +375,6 @@ Answer: {answer}"""
     train_dataset = dataset["train"]
     eval_dataset = dataset["validation"]
     
-    # Apply preprocessing
-    train_dataset = train_dataset.map(
-        preprocess, 
-        remove_columns=["id", "title", "context", "question", "answers"]
-    )
-    eval_dataset = eval_dataset.map(
-        preprocess, 
-        remove_columns=["id", "title", "context", "question", "answers"]
-    )
-    
-    # Optionally limit dataset size for faster experimentation
     if args.max_samples > 0:
         train_dataset = train_dataset.shuffle(seed=args.seed).select(
             range(min(args.max_samples, len(train_dataset)))
@@ -394,5 +382,17 @@ Answer: {answer}"""
         eval_dataset = eval_dataset.shuffle(seed=args.seed).select(
             range(min(args.max_samples // 10, len(eval_dataset)))
         )
+    # Apply preprocessing
+    train_dataset = train_dataset.map(
+        preprocess, 
+        remove_columns=["id", "title", "context", "question", "answers"],
+        fn_kwargs={"is_train": True}
+    )
+    eval_dataset = eval_dataset.map(
+        preprocess, 
+        remove_columns=["id", "title", "context", "question", "answers"],
+        fn_kwargs={"is_train": False}
+    )
+    
     
     return train_dataset, eval_dataset

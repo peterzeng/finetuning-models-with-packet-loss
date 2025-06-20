@@ -67,42 +67,41 @@ class MyQATrainer(DistributedTrainer):
     def __init__(self, num_nodes, network, *args, **kwargs):
         super().__init__(num_nodes, network, *args, **kwargs)
         self.eos_token_id = kwargs['tokenizer'].eos_token_id
+
     def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
         if prediction_loss_only:
             return super().prediction_step(model, inputs, prediction_loss_only, ignore_keys)
 
         model.eval()
         with torch.no_grad():
+            outputs = model(**inputs)
+            loss = getattr(outputs, "loss", None)
+
             generated_tokens = model.generate(
                 input_ids=inputs["input_ids"],
                 attention_mask=inputs["attention_mask"],
                 do_sample=False,
-                max_new_tokens=20,
+                max_new_tokens=10,
                 eos_token_id=self.eos_token_id,
                 pad_token_id=model.config.pad_token_id
             )
 
-            labels = inputs["labels"]
-            loss = None
-            if "loss" in model.forward(**inputs):
-                loss = model(**inputs).loss
-
+        labels = inputs.get("labels")
         return (loss, generated_tokens, labels)
 
 
 def compute_exact_match_metric(tokenizer):
     def compute_metrics(eval_pred):
         preds, labels = eval_pred
+        preds = np.where(preds != -100, preds, tokenizer.pad_token_id)
         decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
         labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
         decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
-        correct = 0
-        for pred, label in zip(decoded_preds, decoded_labels):
-            pred = pred.split("## Answer:")[-1].strip()
-            label = label.strip()
-            if pred == label:
-                correct += 1
+        correct = sum(
+            (pred.partition("Answer:")[2].strip().lower() == label.partition("Answer:")[2].strip().lower())
+            for pred, label in zip(decoded_preds, decoded_labels)
+        )
 
         return {"exact_match": correct / len(decoded_preds)}
 
