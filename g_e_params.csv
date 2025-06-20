@@ -6,3 +6,4 @@ point2_percent, 0.001, 0.45, 0.0001, 0.86
 short_1percent, 0.00606, 0.6, 0.0, 1.0
 short_half_percent, 0.00303, 0.6, 0.0, 1.0
 short_point_2percent, 0.00121, 0.6, 0.0, 1.0
+short_point1_percent, 0.001001, 0.999, 0.0, 1.0
