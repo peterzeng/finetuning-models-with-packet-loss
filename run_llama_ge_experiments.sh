@@ -24,7 +24,7 @@ for config in "${CONFIGS[@]}"; do
         --model_name "$MODEL" \
         --dataset "$DATASET" \
         --num_nodes "$nodes" \
-        --batch_size $((16 * ${nodes})) \
+        --batch_size $((8 * ${nodes})) \
         --learning_rate 2e-5 \
         --run_id "$run_id" \
         --epochs 4 \
