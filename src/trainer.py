@@ -81,7 +81,7 @@ class MyQATrainer(DistributedTrainer):
                 input_ids=inputs["input_ids"],
                 attention_mask=inputs["attention_mask"],
                 do_sample=False,
-                max_new_tokens=10,
+                max_new_tokens=50,  # Increased to allow for longer SQuAD answers
                 eos_token_id=self.eos_token_id,
                 pad_token_id=model.config.pad_token_id
             )

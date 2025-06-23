@@ -345,32 +345,73 @@ def get_squad(tokenizer, args):
         question = data["question"]
         answer = data["answers"]["text"][0] if data["answers"]["text"] else ""
         
-        # Format as reading comprehension task (following hotpotqa pattern)
+        # Format as reading comprehension task
         input_text = f"""Answer the question based on the context provided. Provide a concise answer extracted from the context.
 
-        Context: {context}
+Context: {context}
+
+Question: {question}
+Answer:"""
         
-        Question: {question}"""
-        
-        answer_text = f"Answer: {answer}"
         if is_train:
-            input_text += f"\n{answer_text} " + tokenizer.eos_token
-        input_encoding = tokenizer(
-            input_text,
-            truncation=True,
-            padding="max_length",
-            max_length=max_length,
-            add_special_tokens=True,
-        )
-        
-        labels = input_encoding["input_ids"].copy()
-        labels = [label if label != tokenizer.pad_token_id else -100 for label in labels]
-        
-        return {
-            'input_ids': input_encoding["input_ids"],
-            'attention_mask': input_encoding["attention_mask"],
-            'labels': labels
-        }
+            # For training, include the answer
+            full_text = input_text + f" {answer}" + tokenizer.eos_token
+            input_encoding = tokenizer(
+                full_text,
+                truncation=True,
+                padding="max_length",
+                max_length=max_length,
+                add_special_tokens=True,
+            )
+            
+            # Only compute loss on answer tokens
+            prompt_encoding = tokenizer(
+                input_text,
+                truncation=True,
+                padding=False,
+                add_special_tokens=True,
+            )
+            
+            # Create labels: -100 for prompt tokens, actual tokens for answer
+            labels = input_encoding["input_ids"].copy()
+            prompt_length = len(prompt_encoding["input_ids"])
+            
+            # Mask out the prompt tokens
+            for i in range(min(prompt_length, len(labels))):
+                labels[i] = -100
+                
+            # Mask out padding tokens  
+            labels = [label if label != tokenizer.pad_token_id else -100 for label in labels]
+            
+            return {
+                'input_ids': input_encoding["input_ids"],
+                'attention_mask': input_encoding["attention_mask"],
+                'labels': labels
+            }
+        else:
+            # For evaluation, don't include the answer in input
+            input_encoding = tokenizer(
+                input_text,
+                truncation=True,
+                padding="max_length",
+                max_length=max_length,
+                add_special_tokens=True,
+            )
+            
+            # For evaluation, labels should be just the answer for metric computation
+            answer_encoding = tokenizer(
+                f"Answer: {answer}",
+                truncation=True,
+                padding="max_length",
+                max_length=100,  # Shorter length for answers
+                add_special_tokens=False,
+            )
+            
+            return {
+                'input_ids': input_encoding["input_ids"],
+                'attention_mask': input_encoding["attention_mask"],
+                'labels': answer_encoding["input_ids"]
+            }
     
     train_dataset = dataset["train"]
     eval_dataset = dataset["validation"]
