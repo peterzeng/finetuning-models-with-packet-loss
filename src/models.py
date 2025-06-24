@@ -37,5 +37,6 @@ def get_qa_model_and_tokenizer(model_name, num_unfrozen_layers=None):
 
     tokenizer.padding_side = "left"
     model.generation_config.top_p = None
-    model.generation_config.temperature = None    
+    model.generation_config.temperature = None
+    model.config.eos_token_id = tokenizer.eos_token_id
     return model, tokenizer

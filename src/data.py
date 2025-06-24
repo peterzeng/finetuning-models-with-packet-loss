@@ -222,23 +222,6 @@ def get_hellaswag(tokenizer, args):
             'attention_mask': question_encoded["attention_mask"],
             'labels': int(data["label"])
         }
-
-        # Create encodings for all choices
-        # encodings = tokenizer(
-        #     choices,
-        #     truncation=True,
-        #     padding="max_length",
-        #     max_length=max_length,
-        #     return_tensors="pt"
-        # )
-        
-        # # Get label (correct ending index)
-        # label = int(data["label"])
-        # return {
-        #     'input_ids': encodings["input_ids"][label].tolist(),
-        #     'attention_mask': encodings["attention_mask"][label].tolist(),
-        #     'labels': label
-        # }
     
     # Map preprocessing function to datasets
     train_dataset = train_dataset.map(preprocess, remove_columns=["ctx_a", "ctx_b","ctx", "endings", "label", "activity_label", "source_id"])
@@ -340,6 +323,48 @@ def get_squad(tokenizer, args):
     max_length = 1024
     dataset = load_dataset("rajpurkar/squad")
     
+    # def preprocess(data, is_train=True):
+    #     context = data["context"]
+    #     question = data["question"]
+    #     answer = data["answers"]["text"][0] if data["answers"]["text"] else ""
+        
+    #     # Format as reading comprehension task (following hotpotqa pattern)
+    #     input_text = f"""Answer the question based on the context provided. Provide a concise answer extracted from the context.
+
+    #     Context: {context}
+        
+    #     Question: {question}
+
+    #     Answer:"""
+
+    #     answer = answer +' ' + tokenizer.eos_token
+
+    #     if is_train:
+    #         input_text += f" {answer}"
+    #         input_encoding = tokenizer(
+    #             input_text,
+    #             truncation=True,
+    #             padding="max_length",
+    #             max_length=max_length,
+    #             add_special_tokens=True,
+    #         )
+        
+    #         prompt_len = sum(
+    #         1 for id in input_encoding["input_ids"] if id != tokenizer.pad_token_id
+    #         )
+
+    #         labels = input_encoding["input_ids"].copy()
+    #         labels[:prompt_len] = [-100] * prompt_len
+    #         labels = input_encoding["input_ids"].copy()
+    #         labels = [label if label != tokenizer.pad_token_id else -100 for label in labels]
+        
+    #     return {
+    #         'input_ids': input_encoding["input_ids"],
+    #         'attention_mask': input_encoding["attention_mask"],
+    #         'labels': labels
+    #     }
+    
+
     def preprocess(data, is_train=True):
         context = data["context"]
         question = data["question"]

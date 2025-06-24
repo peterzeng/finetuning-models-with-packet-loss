@@ -107,8 +107,8 @@ class MyQATrainer(DistributedTrainer):
             generated_tokens = model.generate(
                 input_ids=inputs["input_ids"],
                 attention_mask=inputs["attention_mask"],
+                max_new_tokens=20,
                 do_sample=False,
-                max_new_tokens=50,  # Increased to allow for longer SQuAD answers
                 eos_token_id=self.eos_token_id,
                 pad_token_id=model.config.pad_token_id,
                 early_stopping=True
@@ -191,13 +191,15 @@ class MyClassifierCallback(TrainerCallback):
             self.counter +=1
             if self.counter >= self.patience:
                 print(f"Target accuracy {self.args['target_acc']} reached. Stopping training.")
+                with open(self.args['report_file'], "w") as f:
+                    f.write(f"Accuracy: {accuracy:.3f}, Threshold: {self.args['report_ttac'][0]},  Step: {state.global_step}\n")
                 control.should_training_stop = True
 
-        if len(self.args['report_ttac']) > 0:
-            if accuracy > self.args['report_ttac'][0]:
-                with open(self.args['report_file'], "a") as f:
-                    f.write(f"Accuracy: {accuracy:.3f}, Threshold: {self.args['report_ttac'][0]},  Step: {state.global_step}\n")
-                self.args['report_ttac'] = self.args['report_ttac'][1:]
+        # if len(self.args['report_ttac']) > 0:
+        #     if accuracy > self.args['report_ttac'][0]:
+        #         with open(self.args['report_file'], "a") as f:
+        #             f.write(f"Accuracy: {accuracy:.3f}, Threshold: {self.args['report_ttac'][0]},  Step: {state.global_step}\n")
+        #         self.args['report_ttac'] = self.args['report_ttac'][1:]
             
         return super().on_evaluate(args, state, control, **kwargs)
         

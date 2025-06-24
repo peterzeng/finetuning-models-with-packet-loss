@@ -7,7 +7,8 @@ DATASET="mnli"
 # LOSS_RATES=("0.0" "0.001" "0.005" "0.01")
 NUM_NODES=("8")
 SEEDS=("10" "20" "30" "40" "50")
-CONFIGS=("short_1percent" "short_half_percent" "short_point_2percent")
+#CONFIGS=("short_1percent" "short_half_percent" "short_point_2percent")
+CONFIGS=("point2_percent")
 
 export CUDA_VISIBLE_DEVICES=1
 export WANDB_PROJECT="new_lossy_network"

@@ -1,17 +1,18 @@
-#!/bin/bash
-#MODEL="meta-llama/Llama-3.2-1B"
-MODEL="openai-community/gpt2-large"
-MODEL_ALIAS="gpt2-large"
+# !/bin/bash
+MODEL="meta-llama/Llama-3.2-1B"
+MODEL_ALIAS="llama"
+# MODEL="openai-community/gpt2-large"
+# MODEL_ALIAS="gpt2-large"
 DATASET="mnli"
 
-LOSS_RATES=("0.0" "0.001" "0.005" "0.01")
+LOSS_RATES=("0.0" "0.001" "0.002" "0.005" "0.01")
 # LOSS_RATES=("0.002")
 # NUM_NODES=("2" "10")
-NUM_NODES=("8")
+NUM_NODES=("4" "8" "10")
 SEEDS=("10" "20" "30" "40" "50")
 #SEEDS=("10")
 # GPU settings
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=1
 export WANDB_PROJECT="new_lossy_network"
 
 # Create output directory if it doesn't exist
@@ -29,8 +30,8 @@ for loss_rate in "${LOSS_RATES[@]}"; do
         --dataset "$DATASET" \
         --loss_rate "$loss_rate" \
         --num_nodes "$nodes" \
-        --batch_size $((16 * ${nodes})) \
-        --learning_rate 2e-5 \
+        --batch_size $((8 * ${nodes})) \
+        --learning_rate 1e-5 \
         --run_id "$run_id" \
         --epochs 7 \
         --seed "$seed" \
